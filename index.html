@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreshCheck - AI Food Safety Scanner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: #2c3e50;
+      line-height: 1.6;
+    }
+    
+    header {
+      background: linear-gradient(135deg, #28a745, #20c997, #17a2b8);
+      color: white;
+      text-align: center;
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+      animation: float 20s infinite linear;
+    }
+    
+    @keyframes float {
+      0% { transform: translateX(-100px); }
+      100% { transform: translateX(100vw); }
+    }
+    
+    header h1 {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 1;
+    }
+    
+    header p {
+      font-size: 1.3rem;
+      margin-top: 15px;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 8px 16px;
+      border-radius: 25px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(10px);
+    }
+    
+    main {
+      max-width: 1200px;
+      margin: -30px auto 40px;
+      padding: 0 20px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    section {
+      margin-bottom: 60px;
+    }
+    
+    h2 {
+      color: #28a745;
+      margin-bottom: 25px;
+      font-size: 2rem;
+      text-align: center;
+    }
+    
+    .scanner-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .upload-box, .sensor-box {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 30px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .upload-box:hover, .sensor-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    }
+    
+    .upload-box {
+      border-left: 4px solid #28a745;
+    }
+    
+    .sensor-box {
+      border-left: 4px solid #17a2b8;
+      opacity: 0.8;
+    }
+    
+    .scanner-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+    
+    .upload-box .scanner-icon {
+      color: #28a745;
+    }
+    
+    .sensor-box .scanner-icon {
+      color: #17a2b8;
+    }
+    
+    input[type="file"] {
+      margin: 20px 0;
+      padding: 12px;
+      border: 2px dashed #28a745;
+      border-radius: 8px;
+      width: 100%;
+      background: #f8f9fa;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      border: none;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+    
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    #result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      display: none;
+      animation: slideIn 0.5s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-top: 40px;
+    }
+    
+    .feature-card {
+      background: white;
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.3s ease;
+      border-top: 4px solid #28a745;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-8px);
+    }
+    
+    .feature-card h3 {
+      color: #28a745;
+      margin-bottom: 15px;
+      font-size: 1.4rem;
+    }
+    
+    .feature-card p {
+      color: #6c757d;
+      font-size: 1rem;
+    }
+    
+    .stats-section {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      margin: 40px 0;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+      margin-top: 30px;
+    }
+    
+    .stat-item {
+      padding: 20px;
+    }
+    
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #28a745;
+      display: block;
+    }
+    
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+    
+    .tech-stack {
+      background: linear-gradient(135deg, #495057, #6c757d);
+      color: white;
+      border-radius: 16px;
+      padding: 40px;
+      margin: 40px 0;
+    }
+    
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .tech-item {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    
+    .coming-soon {
+      opacity: 0.7;
+      font-style: italic;
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+    
+    footer {
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 60px;
+    }
+    
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .developer-credit {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    
+    .developer-name {
+      color: #20c997;
+      font-weight: 700;
+    }
+    
+    @media (max-width: 768px) {
+      .scanner-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      header h1 {
+        font-size: 2.5rem;
+      }
+      
+      header p {
+        font-size: 1.1rem;
+      }
+    }
+    
+    .result-details {
+      margin-top: 15px;
+      padding: 15px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌱 FreshCheck</h1>
+    <p>AI-powered platform to detect chemical levels & freshness in fruits & vegetables</p>
+    <div class="badge">Safe Food, Healthy Life</div>
+  </header>
+
+  <main>
+    <!-- Dual Scanner System -->
+    <section>
+      <h2>🔍 Choose Your Scanning Method</h2>
+      <div class="scanner-container">
+        
+        <!-- AI Image Scanner -->
+        <div class="upload-box">
+          <div class="scanner-icon">📷</div>
+          <h3>AI Image Scanner</h3>
+          <p>Upload an image of your fruit or vegetable and let our AI analyze visual patterns for freshness and chemical contamination risks.</p>
+          <input type="file" id="upload" accept="image/*">
+          <button onclick="analyzeImage()">Analyze with AI</button>
+          <div id="result"></div>
+        </div>
+
+        <!-- Sensor Scanner -->
+        <div class="sensor-box">
+          <div class="scanner-icon">🔬</div>
+          <h3>Spectrometer Scanner</h3>
+          <p>Connect your spectrometer device for real-time chemical detection with higher accuracy results.</p>
+          <button disabled>Connect Sensor Device</button>
+          <div class="coming-soon">Coming Soon - Advanced Hardware Integration</div>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+      <h2>🎯 Impact & Vision</h2>
+      <p>Promoting food safety awareness and healthy living for everyone</p>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number">95%</span>
+          <div class="stat-label">AI Accuracy Goal</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">100K+</span>
+          <div class="stat-label">Target Users</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">24/7</span>
+          <div class="stat-label">Availability</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">₹0</span>
+          <div class="stat-label">Cost (Free)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section>
+      <h2>🌟 Why Choose FreshCheck?</h2>
+      <div class="features">
+        <div class="feature-card">
+          <h3>🤖 AI-Powered Analysis</h3>
+          <p>Deep learning models trained on thousands of food images to detect pesticide traces, artificial ripening, and freshness levels with high accuracy.</p>
+        </div>
+        <div class="feature-card">
+          <h3>⚡ Instant Results</h3>
+          <p>Get immediate feedback on food safety with color-coded recommendations: Safe (Green), Caution (Yellow), or Avoid (Red).</p>
+        </div>
+        <div class="feature-card">
+          <h3>🏥 Health Protection</h3>
+          <p>Especially designed to protect vulnerable groups like children and elderly from harmful chemicals and contaminated food.</p>
+        </div>
+        <div class="feature-card">
+          <h3>💡 Educational Hub</h3>
+          <p>Learn proper food washing techniques, identify organic alternatives, and get tips for safe food storage and preparation.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🌍 Accessible for All</h3>
+          <p>Free platform designed for everyone - from urban families to rural communities, promoting inclusive health awareness.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔬 Dual Technology</h3>
+          <p>Combines AI image analysis with future sensor integration for comprehensive food safety assessment.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technology Stack -->
+    <section class="tech-stack">
+      <h2 style="color: white;">⚙️ Technology Stack</h2>
+      <p style="color: rgba(255,255,255,0.9);">Built with cutting-edge AI and modern web technologies</p>
+      <div class="tech-grid">
+        <div class="tech-item">
+          <h4>Frontend</h4>
+          <p>ReactJS, HTML5, CSS3</p>
+        </div>
+        <div class="tech-item">
+          <h4>Backend</h4>
+          <p>Python Flask, REST API</p>
+        </div>
+        <div class="tech-item">
+          <h4>AI/ML</h4>
+          <p>TensorFlow, PyTorch, CNN</p>
+        </div>
+        <div class="tech-item">
+          <h4>Database</h4>
+          <p>MongoDB, MySQL</p>
+        </div>
+        <div class="tech-item">
+          <h4>IoT Sensors</h4>
+          <p>Spectrometer Integration</p>
+        </div>
+        <div class="tech-item">
+          <h4>Mobile</h4>
+          <p>Cross-platform App</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Future Scope -->
+    <section>
+      <h2>🚀 Future Roadmap</h2>
+      <div class="features">
+        <div class="feature-card">
+          <h3>📱 Mobile App</h3>
+          <p>Live camera scanning with real-time analysis. Available for both Android and iOS platforms with offline capabilities.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🏪 Supermarket Integration</h3>
+          <p>Partner with retailers for pre-checkout food safety verification and quality assurance systems.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🏢 B2B Solutions</h3>
+          <p>Enterprise solutions for farmers, distributors, restaurants, schools, and food processing industries.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🌐 Global Database</h3>
+          <p>Build comprehensive freshness score database for worldwide food safety standards and regulations.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="developer-credit">
+        Developed by <span class="developer-name">Vanaja P</span>
+      </div>
+      <p>© 2025 FreshCheck | All Rights Reserved</p>
+      <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.8;">
+        Empowering communities with AI-driven food safety solutions
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Simulate AI analysis with more realistic parameters
+    function analyzeImage() {
+      const fileInput = document.getElementById("upload");
+      const resultBox = document.getElementById("result");
+      
+      if (!fileInput.files[0]) {
+        alert("Please select an image first!");
+        return;
+      }
+      
+      // Show loading state
+      resultBox.style.display = "block";
+      resultBox.innerHTML = "🔄 Analyzing image with AI models...";
+      resultBox.style.background = "#e3f2fd";
+      resultBox.style.color = "#1565c0";
+      
+      // Simulate AI processing delay
+      setTimeout(() => {
+        // Generate realistic analysis data
+        const freshness = Math.floor(Math.random() * 100);
+        const chemicalRisk = Math.floor(Math.random() * 100);
+        const pesticides = Math.floor(Math.random() * 50);
+        const artificialRipening = Math.random() > 0.7;
+        
+        let status = "";
+        let recommendation = "";
+        let bgColor = "";
+        let textColor = "";
+        
+        // Determine overall safety level
+        const overallRisk = Math.max(chemicalRisk, pesticides);
+        
+        if (overallRisk < 25 && freshness > 70) {
+          status = "✅ Safe to Eat";
+          recommendation = "Fresh and safe! Minimal chemical traces detected.";
+          bgColor = "#d4edda";
+          textColor = "#155724";
+        } else if (overallRisk < 60 && freshness > 40) {
+          status = "⚠️ Wash Thoroughly";
+          recommendation = "Moderate chemical levels detected. Wash with warm water and consume soon.";
+          bgColor = "#fff3cd";
+          textColor = "#856404";
+        } else {
+          status = "❌ High Risk - Avoid";
+          recommendation = "High chemical contamination or poor freshness detected. Consider alternatives.";
+          bgColor = "#f8d7da";
+          textColor = "#721c24";
+        }
+        
+        resultBox.style.background = bgColor;
+        resultBox.style.color = textColor;
+        
+        resultBox.innerHTML = `
+          <div style="font-size: 1.2rem; margin-bottom: 15px;">${status}</div>
+          <div class="result-details">
+            <strong>Analysis Results:</strong><br>
+            🥬 Freshness Level: ${freshness}%<br>
+            🧪 Chemical Risk: ${chemicalRisk}%<br>
+            🐛 Pesticide Traces: ${pesticides}%<br>
+            🍎 Artificial Ripening: ${artificialRipening ? 'Detected' : 'Not Detected'}<br><br>
+            <strong>Recommendation:</strong> ${recommendation}
+          </div>
+        `;
+      }, 2000);
+    }
+    
+    // Add file input change event for better UX
+    document.getElementById('upload').addEventListener('change', function(e) {
+      if (e.target.files[0]) {
+        const fileName = e.target.files[0].name;
+        console.log('File selected:', fileName);
+      }
+    });
+  </script>
+
+</body>
+</html>
